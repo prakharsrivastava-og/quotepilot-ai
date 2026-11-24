@@ -1,3 +1,5 @@
+﻿<p align="center"><img src="assets/quotepilot-banner.png" alt="QuotePilot AI Banner" width="100%"></p>
+
 # QuotePilot AI
 
 ### Turn Every Inquiry Into an Opportunity.
@@ -28,23 +30,23 @@ QuotePilot AI is an AI-powered sales assistant designed to help small businesses
 To simplify sales management for small businesses by bringing AI intelligence and customer management into one platform.
 
 ## Project Status
-🚧 Under Development
+ðŸš§ Under Development
 
 ## Team
 
-- Prakhar Srivastava — 26U020115
-- Prakhar Srivastava — 26U020165
-- Shreyash Seth — 26U020157
+- Prakhar Srivastava â€” 26U020115
+- Prakhar Srivastava â€” 26U020165
+- Shreyash Seth â€” 26U020157
 
 **Subject:** FoCP (CSE-1003)
 
-# QuotePilot AI — Turn Every Inquiry Into an Opportunity
+# QuotePilot AI â€” Turn Every Inquiry Into an Opportunity
 
 Academic Project for **FoCP (CSE-1003)**
 Team Members:
-- Prakhar Srivastava — Scholar No. 26U020115
-- Prakhar Srivastava — Scholar No. 26U020165
-- Shreyash Seth — Scholar No. 26U020157
+- Prakhar Srivastava â€” Scholar No. 26U020115
+- Prakhar Srivastava â€” Scholar No. 26U020165
+- Shreyash Seth â€” Scholar No. 26U020157
 
 ## 1. Install Dependencies
 ```bash
@@ -80,3 +82,4 @@ npm run dev
 - **Firebase Spark (Free)**: Includes Firebase Auth, 1 GiB Firestore storage / 50k reads + 20k writes per day, and Firebase Hosting. Cloud Functions v2 requires upgrading to the pay-as-you-go Blaze plan, which is why the Express backend in `server/index.js` is provided separately.
 - **Google Gemini API Free Tier**: Subject to Google AI Studio RPM/RPD rate limits and prompt logging terms on free tier.
 - **Email / WhatsApp / Stripe**: Integration status checks and UI are built; actual delivery/billing requires SMTP, Meta WhatsApp Cloud API, and Stripe credentials in `server/.env`.
+
