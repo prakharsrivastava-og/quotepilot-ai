@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'node:path';
@@ -73,6 +73,7 @@ function cleanJsonText(raw) {
 }
 
 
+
 async function callGeminiJSON({ prompt, systemInstruction, requestedModel }) {
   const apiKey = process.env.GEMINI_API_KEY;
 
@@ -86,10 +87,7 @@ async function callGeminiJSON({ prompt, systemInstruction, requestedModel }) {
     ? requestedModel
     : DEFAULT_MODEL;
 
-  const fallbackModel =
-    primaryModel === 'gemini-3.5-flash-lite'
-      ? 'gemini-3.8-flash'
-      : 'gemini-3.5-flash-lite';
+  const fallbackModel = 'gemini-3.5-flash-lite';
 
   async function requestModel(model) {
     const endpoint =
@@ -123,18 +121,20 @@ async function callGeminiJSON({ prompt, systemInstruction, requestedModel }) {
         })
       });
 
+      const payload = await response.json().catch(() => ({}));
+
       if (!response.ok) {
         const error = new Error(
-          payload?.error?.message ||
-          'Gemini API error (' + response.status + ')'
+          payload?.error?.message || 'Gemini API error (' + response.status + ')'
         );
         error.statusCode = response.status;
         throw error;
       }
 
-      const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const responseText =
+        payload?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      if (!text) {
+      if (!responseText) {
         const error = new Error('Gemini returned an empty response.');
         error.statusCode = 502;
         throw error;
@@ -143,7 +143,7 @@ async function callGeminiJSON({ prompt, systemInstruction, requestedModel }) {
       let data;
 
       try {
-        data = JSON.parse(cleanJsonText(text));
+        data = JSON.parse(cleanJsonText(responseText));
       } catch {
         const error = new Error('Gemini returned invalid JSON.');
         error.statusCode = 502;
@@ -151,11 +151,10 @@ async function callGeminiJSON({ prompt, systemInstruction, requestedModel }) {
       }
 
       return { data, modelUsed: model };
+
     } catch (err) {
       if (err.name === 'AbortError') {
-        const error = new Error(
-          'Gemini request timed out after 30 seconds.'
-        );
+        const error = new Error('Gemini request timed out after 30 seconds.');
         error.statusCode = 504;
         throw error;
       }
@@ -168,18 +167,19 @@ async function callGeminiJSON({ prompt, systemInstruction, requestedModel }) {
   try {
     return await requestModel(primaryModel);
   } catch (err) {
-    if (err.statusCode !== 503) {
+    if (
+      (err.statusCode !== 503 && err.statusCode !== 429) ||
+      primaryModel === fallbackModel
+    ) {
       throw err;
     }
 
-    console.warn(
-      primaryModel + ' is overloaded. Trying fallback: ' + fallbackModel
-    );
+    console.warn('Primary Gemini model unavailable. Trying fallback:', fallbackModel);
 
     try {
       return await requestModel(fallbackModel);
     } catch (fallbackError) {
-      console.error('Both Gemini models failed:', fallbackError.message);
+      console.error('Gemini fallback failed:', fallbackError.message);
 
       const error = new Error(
         'AI is temporarily unavailable. Please try again shortly.'
@@ -189,60 +189,6 @@ async function callGeminiJSON({ prompt, systemInstruction, requestedModel }) {
     }
   }
 }
-
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'your_server_side_gemini_api_key') {
-    const error = new Error('GEMINI_API_KEY is not configured in server/.env.');
-    error.statusCode = 503;
-    throw error;
-  }
-
-  const model = ALLOWED_MODELS.has(requestedModel) ? requestedModel : DEFAULT_MODEL;
-  const endpoint =
-    'https://generativelanguage.googleapis.com/v1beta/models/' +
-    encodeURIComponent(model) +
-    ':generateContent';
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey
-    },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemInstruction }] },
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.3,
-        responseMimeType: 'application/json'
-      }
-    })
-  });
-
-  const payload = await response.json();
-  if (!response.ok) {
-    const msg = payload?.error?.message || 'Gemini API error (' + response.status + ')';
-    const err = new Error(msg);
-    err.statusCode = response.status === 429 ? 429 : 502;
-    throw err;
-  }
-
-  const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    const err = new Error('Gemini returned an empty response.');
-    err.statusCode = 502;
-    throw err;
-  }
-
-  try {
-
-  } catch {
-    const err = new Error('Gemini returned invalid JSON.');
-    err.statusCode = 502;
-    throw err;
-  }
-
-
 app.get('/api/health', (req, res) => {
   const geminiConfigured = Boolean(
     process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_server_side_gemini_api_key'
@@ -415,3 +361,4 @@ app.post('/api/billing/create-checkout-session', verifyAuth, async (req, res) =>
 app.listen(PORT, () => {
   console.log('QuotePilot AI server listening on http://localhost:' + PORT);
 });
+
