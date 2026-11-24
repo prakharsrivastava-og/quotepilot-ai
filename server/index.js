@@ -209,6 +209,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.post('/api/ai/analyze', verifyAuth, async (req, res) => {
+  console.log('AI ANALYZE REQUEST RECEIVED');
   try {
     const {
       businessName, industry, currency, services,
