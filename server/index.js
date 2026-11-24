@@ -72,7 +72,124 @@ function cleanJsonText(raw) {
   return s;
 }
 
+
 async function callGeminiJSON({ prompt, systemInstruction, requestedModel }) {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey || apiKey === 'your_server_side_gemini_api_key') {
+    const error = new Error('GEMINI_API_KEY is not configured.');
+    error.statusCode = 503;
+    throw error;
+  }
+
+  const primaryModel = ALLOWED_MODELS.has(requestedModel)
+    ? requestedModel
+    : DEFAULT_MODEL;
+
+  const fallbackModel =
+    primaryModel === 'gemini-3.5-flash-lite'
+      ? 'gemini-3.8-flash'
+      : 'gemini-3.5-flash-lite';
+
+  async function requestModel(model) {
+    const endpoint =
+      'https://generativelanguage.googleapis.com/v1beta/models/' +
+      encodeURIComponent(model) +
+      ':generateContent';
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: systemInstruction }]
+          },
+          contents: [{
+            role: 'user',
+            parts: [{ text: prompt }]
+          }],
+          generationConfig: {
+            temperature: 0.3,
+            responseMimeType: 'application/json'
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const error = new Error(
+          payload?.error?.message ||
+          'Gemini API error (' + response.status + ')'
+        );
+        error.statusCode = response.status;
+        throw error;
+      }
+
+      const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!text) {
+        const error = new Error('Gemini returned an empty response.');
+        error.statusCode = 502;
+        throw error;
+      }
+
+      let data;
+
+      try {
+        data = JSON.parse(cleanJsonText(text));
+      } catch {
+        const error = new Error('Gemini returned invalid JSON.');
+        error.statusCode = 502;
+        throw error;
+      }
+
+      return { data, modelUsed: model };
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        const error = new Error(
+          'Gemini request timed out after 30 seconds.'
+        );
+        error.statusCode = 504;
+        throw error;
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  try {
+    return await requestModel(primaryModel);
+  } catch (err) {
+    if (err.statusCode !== 503) {
+      throw err;
+    }
+
+    console.warn(
+      primaryModel + ' is overloaded. Trying fallback: ' + fallbackModel
+    );
+
+    try {
+      return await requestModel(fallbackModel);
+    } catch (fallbackError) {
+      console.error('Both Gemini models failed:', fallbackError.message);
+
+      const error = new Error(
+        'AI is temporarily unavailable. Please try again shortly.'
+      );
+      error.statusCode = fallbackError.statusCode || 503;
+      throw error;
+    }
+  }
+}
+
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey === 'your_server_side_gemini_api_key') {
     const error = new Error('GEMINI_API_KEY is not configured in server/.env.');
@@ -118,13 +235,13 @@ async function callGeminiJSON({ prompt, systemInstruction, requestedModel }) {
   }
 
   try {
-    return { data: JSON.parse(cleanJsonText(text)), modelUsed: model };
+
   } catch {
     const err = new Error('Gemini returned invalid JSON.');
     err.statusCode = 502;
     throw err;
   }
-}
+
 
 app.get('/api/health', (req, res) => {
   const geminiConfigured = Boolean(
