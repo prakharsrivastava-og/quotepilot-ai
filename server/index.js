@@ -122,6 +122,7 @@ async function callGeminiJSON({ prompt, systemInstruction, requestedModel }) {
       });
 
       const payload = await response.json().catch(() => ({}));
+      console.log('Gemini response status:', response.status);
 
       if (!response.ok) {
         const error = new Error(
