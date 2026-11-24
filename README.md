@@ -1,4 +1,9 @@
-﻿<p align="center"><img src="assets/quotepilot-banner.png" alt="QuotePilot AI Banner" width="100%"></p>
+﻿## 🌐 Live Demo
+
+Try QuotePilot AI here:
+
+**[Launch QuotePilot AI](https://quotepilot-ai-7b4da.web.app)**
+<p align="center"><img src="assets/quotepilot-banner.png" alt="QuotePilot AI Banner" width="100%"></p>
 
 # QuotePilot AI
 
@@ -82,4 +87,5 @@ npm run dev
 - **Firebase Spark (Free)**: Includes Firebase Auth, 1 GiB Firestore storage / 50k reads + 20k writes per day, and Firebase Hosting. Cloud Functions v2 requires upgrading to the pay-as-you-go Blaze plan, which is why the Express backend in `server/index.js` is provided separately.
 - **Google Gemini API Free Tier**: Subject to Google AI Studio RPM/RPD rate limits and prompt logging terms on free tier.
 - **Email / WhatsApp / Stripe**: Integration status checks and UI are built; actual delivery/billing requires SMTP, Meta WhatsApp Cloud API, and Stripe credentials in `server/.env`.
+
 
